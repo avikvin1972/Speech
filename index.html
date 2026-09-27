@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Английский тренажёр</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fef6e4; --card:#ffffff; --ink:#3a2f45; --sub:#6b5f7a;
+    --p1:#ff8a5c; --p2:#8ac6d1; --p3:#ffd23f; --p4:#7ed957; --p5:#c58aff;
+    --good:#4caf50; --bad:#ef5350; --shadow:rgba(60,40,80,.15);
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#241f2e; --card:#332b40; --ink:#f3ecff; --sub:#c3b6d6; --shadow:rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#241f2e; --card:#332b40; --ink:#f3ecff; --sub:#c3b6d6; --shadow:rgba(0,0,0,.4);
+  }
+  html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
+  *{box-sizing:border-box;}
+  body{
+    height:100%; margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Baloo 2', system-ui, sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+    padding:16px; min-height:100vh;
+  }
+  header{
+    width:100%; max-width:480px; display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:12px;
+  }
+  header h1{font-size:1.2rem; margin:0;}
+  .stars{background:var(--card); border-radius:20px; padding:6px 14px; font-weight:700; box-shadow:0 3px 0 var(--shadow); font-size:1.05rem;}
+  main{width:100%; max-width:480px; display:flex; flex-direction:column; gap:14px; flex:1;}
+  .progressbar{width:100%; height:10px; background:var(--card); border-radius:6px; overflow:hidden; box-shadow:0 2px 0 var(--shadow);}
+  .progressbar>div{height:100%; background:linear-gradient(90deg,var(--p1),var(--p3)); width:0%; transition:width .3s;}
+  .card{
+    background:var(--card); border-radius:24px; padding:22px 18px; text-align:center;
+    box-shadow:0 6px 0 var(--shadow);
+  }
+  .emoji{font-size:4rem; line-height:1; margin-bottom:6px;}
+  .prompt{font-size:1.3rem; font-weight:700; min-height:2.4em;}
+  .blank{display:inline-block; min-width:44px; border-bottom:3px solid var(--p1); margin:0 2px;}
+  .filled{color:var(--p1);}
+  .bank, .answer{
+    display:flex; flex-wrap:wrap; gap:8px; justify-content:center; min-height:48px;
+  }
+  .answer{border:2px dashed var(--sub); border-radius:16px; padding:10px; background:transparent;}
+  .tile{
+    font-family:inherit; font-size:1.05rem; font-weight:700; padding:10px 16px;
+    border:none; border-radius:14px; cursor:pointer; color:#fff;
+    box-shadow:0 4px 0 rgba(0,0,0,.15); transition:transform .1s;
+  }
+  .tile:active{transform:translateY(2px); box-shadow:0 2px 0 rgba(0,0,0,.15);}
+  .tile.c0{background:var(--p1);} .tile.c1{background:var(--p2);} .tile.c2{background:var(--p3); color:#4a3b00;}
+  .tile.c3{background:var(--p4);} .tile.c4{background:var(--p5);}
+  .row{display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
+  .btn{
+    font-family:inherit; font-size:1.05rem; font-weight:700; padding:12px 22px;
+    border:none; border-radius:16px; cursor:pointer; color:#fff; background:var(--p1);
+    box-shadow:0 4px 0 rgba(0,0,0,.15);
+  }
+  .btn:active{transform:translateY(2px); box-shadow:0 2px 0 rgba(0,0,0,.15);}
+  .btn.secondary{background:var(--p2);}
+  .btn.big{font-size:1.6rem; border-radius:50%; width:88px; height:88px; padding:0;}
+  .btn:disabled{opacity:.5; cursor:default;}
+  .feedback{font-size:1.1rem; font-weight:700; min-height:1.6em;}
+  .feedback.good{color:var(--good);}
+  .feedback.bad{color:var(--bad);}
+  .mic-wrap{display:flex; flex-direction:column; align-items:center; gap:8px;}
+  .hint{font-size:.85rem; color:var(--sub);}
+  footer{margin-top:auto; font-size:.75rem; color:var(--sub); padding:10px;}
+  .shake{animation:shake .35s;}
+  @keyframes shake{
+    0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🦉 Тренажёр фраз</h1>
+  <div class="stars">⭐ <span id="starsCount">0</span></div>
+</header>
+<main>
+  <div class="progressbar"><div id="progressFill"></div></div>
+  <div class="card" id="card">
+    <div class="emoji" id="emoji">🐱</div>
+    <div class="prompt" id="prompt">…</div>
+
+    <div id="buildStage">
+      <p class="hint">Собери фразу из слов 👇</p>
+      <div class="answer" id="answer"></div>
+      <div class="bank" id="bank"></div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn secondary" id="resetBtn">↺ Заново</button>
+      </div>
+    </div>
+
+    <div id="speakStage" style="display:none;">
+      <p class="hint">Теперь скажи фразу вслух 🎤</p>
+      <div class="prompt filled" id="targetSentence"></div>
+      <div class="mic-wrap">
+        <button class="btn big" id="micBtn">🎤</button>
+        <button class="btn secondary" id="hearBtn">🔊 Послушать</button>
+      </div>
+      <div id="heard" class="hint"></div>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+  <div class="row" id="nextRow" style="display:none;">
+    <button class="btn" id="nextBtn">Дальше →</button>
+  </div>
+</main>
+<footer>Работает лучше всего в Chrome (нужен доступ к микрофону)</footer>
+
+<script>
+(function(){
+  const patterns = [
+    {tpl:"I have a {w}", items:[
+      {w:"cat", e:"🐱"},{w:"dog", e:"🐶"},{w:"ball", e:"⚽"},{w:"book", e:"📕"},{w:"apple", e:"🍎"},{w:"car", e:"🚗"}
+    ]},
+    {tpl:"I can {w}", items:[
+      {w:"run", e:"🏃"},{w:"jump", e:"🤸"},{w:"swim", e:"🏊"},{w:"sing", e:"🎤"},{w:"dance", e:"💃"},{w:"fly", e:"✈️"}
+    ]},
+    {tpl:"The {w} is red", items:[
+      {w:"apple", e:"🍎"},{w:"ball", e:"⚽"},{w:"car", e:"🚗"},{w:"box", e:"📦"}
+    ]},
+    {tpl:"There is a {w} in the box", items:[
+      {w:"cat", e:"🐱"},{w:"toy", e:"🧸"},{w:"book", e:"📕"},{w:"ball", e:"⚽"}
+    ]},
+    {tpl:"She is {w}ing", items:[
+      {w:"eat", e:"🍽️"},{w:"read", e:"📖"},{w:"sleep", e:"😴"},{w:"play", e:"🧩"},{w:"run", e:"🏃‍♀️"}
+    ]},
+    {tpl:"I like {w}", items:[
+      {w:"pizza", e:"🍕"},{w:"ice cream", e:"🍦"},{w:"dogs", e:"🐶"},{w:"books", e:"📚"},{w:"cats", e:"🐱"}
+    ]}
+  ];
+
+  let deck = [];
+  patterns.forEach(p => p.items.forEach(it => deck.push({tpl:p.tpl, item:it})));
+  shuffle(deck);
+  let idx = 0, stars = 0, target = "", answerWords = [], bankWords = [];
+
+  const starsEl = document.getElementById('starsCount');
+  const progressFill = document.getElementById('progressFill');
+  const emoji = document.getElementById('emoji');
+  const promptEl = document.getElementById('prompt');
+  const bankEl = document.getElementById('bank');
+  const answerEl = document.getElementById('answer');
+  const feedback = document.getElementById('feedback');
+  const buildStage = document.getElementById('buildStage');
+  const speakStage = document.getElementById('speakStage');
+  const targetSentence = document.getElementById('targetSentence');
+  const heard = document.getElementById('heard');
+  const nextRow = document.getElementById('nextRow');
+  const card = document.getElementById('card');
+
+  try{
+    const saved = JSON.parse(localStorage.getItem('trainerProgress')||'{}');
+    if(typeof saved.stars === 'number') stars = saved.stars;
+  }catch(e){}
+  starsEl.textContent = stars;
+
+  function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+  function buildSentence(tpl, item){
+    let full = tpl.replace('{w}', item.w);
+    if(tpl.endsWith('{w}ing')) full = tpl.replace('{w}ing', item.w + 'ing');
+    return full;
+  }
+
+  function startRound(){
+    if(idx >= deck.length){ idx = 0; shuffle(deck); }
+    const round = deck[idx];
+    target = buildSentence(round.tpl, round.item);
+    emoji.textContent = round.item.e;
+    const blankTpl = round.tpl.replace('{w}', '<span class="blank">?</span>').replace('ing</span>', '</span>ing');
+    promptEl.innerHTML = blankTpl;
+    feedback.textContent = '';
+    feedback.className = 'feedback';
+    heard.textContent = '';
+    nextRow.style.display = 'none';
+    speakStage.style.display = 'none';
+    buildStage.style.display = 'block';
+
+    answerWords = [];
+    bankWords = shuffle(target.split(' ').slice());
+    renderBank(); renderAnswer();
+    progressFill.style.width = ((idx % deck.length) / deck.length * 100) + '%';
+  }
+
+  function renderBank(){
+    bankEl.innerHTML = '';
+    bankWords.forEach((w, i) => {
+      const b = document.createElement('button');
+      b.className = 'tile c' + (i % 5);
+      b.textContent = w;
+      b.onclick = () => {
+        answerWords.push(w);
+        bankWords.splice(i, 1);
+        renderBank(); renderAnswer();
+        if(answerWords.length === target.split(' ').length) checkBuild();
+      };
+      bankEl.appendChild(b);
+    });
+  }
+
+  function renderAnswer(){
+    answerEl.innerHTML = '';
+    answerWords.forEach((w, i) => {
+      const b = document.createElement('button');
+      b.className = 'tile c' + (i % 5);
+      b.textContent = w;
+      b.onclick = () => {
+        bankWords.push(w);
+        answerWords.splice(i, 1);
+        renderBank(); renderAnswer();
+      };
+      answerEl.appendChild(b);
+    });
+  }
+
+  function checkBuild(){
+    const guess = answerWords.join(' ').toLowerCase();
+    if(guess === target.toLowerCase()){
+      feedback.textContent = '✅ Отлично!';
+      feedback.className = 'feedback good';
+      setTimeout(() => {
+        buildStage.style.display = 'none';
+        speakStage.style.display = 'block';
+        targetSentence.textContent = target;
+        feedback.textContent = '';
+      }, 500);
+    } else {
+      feedback.textContent = '❌ Попробуй ещё раз';
+      feedback.className = 'feedback bad';
+      card.classList.add('shake');
+      setTimeout(() => card.classList.remove('shake'), 350);
+      setTimeout(() => {
+        bankWords = bankWords.concat(answerWords);
+        answerWords = [];
+        renderBank(); renderAnswer();
+        feedback.textContent = '';
+      }, 700);
+    }
+  }
+
+  document.getElementById('resetBtn').onclick = () => {
+    bankWords = bankWords.concat(answerWords);
+    answerWords = [];
+    shuffle(bankWords);
+    renderBank(); renderAnswer();
+  };
+
+  document.getElementById('hearBtn').onclick = () => {
+    try{
+      const u = new SpeechSynthesisUtterance(target);
+      u.lang = 'en-US'; u.rate = 0.85;
+      speechSynthesis.speak(u);
+    }catch(e){ heard.textContent = 'Озвучка недоступна в этом браузере'; }
+  };
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  document.getElementById('micBtn').onclick = () => {
+    if(!SR){
+      heard.textContent = 'Распознавание речи работает только в Chrome';
+      return;
+    }
+    const rec = new SR();
+    rec.lang = 'en-US';
+    rec.interimResults = false;
+    heard.textContent = '🎧 Слушаю...';
+    rec.onresult = (ev) => {
+      const said = ev.results[0][0].transcript;
+      heard.textContent = '“' + said + '”';
+      scoreSpeech(said);
+    };
+    rec.onerror = () => { heard.textContent = 'Не расслышал, попробуй ещё раз'; };
+    try{ rec.start(); }catch(e){ heard.textContent = 'Не удалось запустить микрофон'; }
+  };
+
+  function norm(s){ return s.toLowerCase().replace(/[^a-z ]/g,'').split(' ').filter(Boolean); }
+
+  function scoreSpeech(said){
+    const t = norm(target), s = norm(said);
+    let matched = 0;
+    const sCopy = s.slice();
+    t.forEach(w => {
+      const i = sCopy.indexOf(w);
+      if(i > -1){ matched++; sCopy.splice(i,1); }
+    });
+    const ratio = matched / t.length;
+    if(ratio >= 0.7){
+      feedback.textContent = '🎉 Супер! Ты сказал правильно!';
+      feedback.className = 'feedback good';
+      stars++; starsEl.textContent = stars;
+      try{ localStorage.setItem('trainerProgress', JSON.stringify({stars})); }catch(e){}
+      nextRow.style.display = 'flex';
+    } else {
+      feedback.textContent = '🤔 Почти! Послушай и скажи ещё раз';
+      feedback.className = 'feedback bad';
+      nextRow.style.display = 'flex';
+    }
+  }
+
+  document.getElementById('nextBtn').onclick = () => { idx++; startRound(); };
+
+  startRound();
+})();
+</script>
+</body>
+</html>
